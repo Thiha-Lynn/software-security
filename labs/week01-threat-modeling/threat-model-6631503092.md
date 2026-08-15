@@ -9,6 +9,10 @@
 
 ## 1. Data-flow diagram
 
+![DFD — sample-app: web client → trust boundary → Flask app → notes.db and uploads/](img/dfd-6631503092.png)
+
+*Structure reference (same content as the image):*
+
 ```
                      Internet → app  ┊ (trust boundary, dashed)
                                      ┊
@@ -21,8 +25,7 @@
                                      ┊   └──────────────┘   ◄── send_from_directory│ (file store)  │
                                      ┊                                             └───────────────┘
 ```
-*(Redraw in draw.io/Excalidraw for the submitted image; this ASCII is the structure to reproduce.
-Dashed line = the only trust boundary, and it has no check on it.)*
+*Dashed line = the only trust boundary, and it has no check on it. Source: `img/dfd-6631503092.svg`.*
 
 ---
 
@@ -158,7 +161,7 @@ Internet→app boundary. **Top-3 STRIDE threats to investigate first:**
 | 4 | No audit logging (repudiation) | all | Med | Med | Med | structured request logging |
 | 5 | Disk/CPU exhaustion (no limits) | /upload,/notes | Med | Med | Med | `MAX_CONTENT_LENGTH` + rate limit |
 
-**Implemented: #1.** Commit **`2202101`** on `wk01`.
+**Implemented: #1.** Commit **`c254723`** on `wk01`.
 
 **Before (unfixed):**
 ```

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1000" height="600" font-family="Helvetica, Arial, sans-serif">
+  <rect width="1000" height="600" fill="#ffffff"/>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a4655"/>
+    </marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c0392b"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"/>
+    </marker>
+  </defs>
+
+  <!-- title -->
+  <text x="30" y="36" font-size="19" font-weight="700" fill="#12181c">Data-Flow Diagram — sample-app (Week 1)</text>
+  <text x="30" y="57" font-size="12.5" fill="#5b6472">Thiha Lin · 6631503092 · 2026-08-15 · Flask + SQLite + local uploads/</text>
+
+  <!-- trust boundary -->
+  <line x1="285" y1="88" x2="285" y2="470" stroke="#c0392b" stroke-width="2.5" stroke-dasharray="10 7"/>
+  <text x="293" y="104" font-size="12.5" font-weight="700" fill="#c0392b">TRUST BOUNDARY</text>
+  <text x="293" y="121" font-size="11" fill="#c0392b">Internet → app · no authn, no validation, no rate limit</text>
+
+  <!-- zone labels -->
+  <text x="34" y="104" font-size="11" font-weight="700" fill="#7d8894" letter-spacing="1">UNTRUSTED ZONE</text>
+  <text x="742" y="104" font-size="11" font-weight="700" fill="#7d8894" letter-spacing="1">DATA TIER</text>
+
+  <!-- external entity: web client -->
+  <rect x="34" y="255" width="170" height="80" fill="#eef2f5" stroke="#12181c" stroke-width="2.5"/>
+  <text x="119" y="285" font-size="15" font-weight="700" fill="#12181c" text-anchor="middle">Web client</text>
+  <text x="119" y="305" font-size="12" fill="#5b6472" text-anchor="middle">browser / curl</text>
+  <text x="119" y="323" font-size="10.5" fill="#7d8894" text-anchor="middle">external entity</text>
+
+  <!-- process: Flask app -->
+  <rect x="370" y="228" width="190" height="134" rx="67" fill="#e6f0f1" stroke="#0e7c86" stroke-width="2.5"/>
+  <text x="465" y="270" font-size="15" font-weight="700" fill="#0a5f68" text-anchor="middle">Flask app</text>
+  <text x="465" y="291" font-size="12" fill="#0a5f68" text-anchor="middle">app.py · :5000</text>
+  <text x="465" y="311" font-size="10.5" fill="#0e7c86" text-anchor="middle">process</text>
+  <text x="465" y="334" font-size="10.5" font-weight="700" fill="#c0392b" text-anchor="middle">runs as root</text>
+
+  <!-- data store: notes.db -->
+  <line x1="742" y1="170" x2="962" y2="170" stroke="#12181c" stroke-width="2.5"/>
+  <line x1="742" y1="228" x2="962" y2="228" stroke="#12181c" stroke-width="2.5"/>
+  <text x="852" y="194" font-size="14" font-weight="700" fill="#12181c" text-anchor="middle">notes.db</text>
+  <text x="852" y="215" font-size="11" fill="#15803d" text-anchor="middle">SQLite · parameterised (?) — safe</text>
+
+  <!-- data store: uploads/ -->
+  <line x1="742" y1="382" x2="962" y2="382" stroke="#12181c" stroke-width="2.5"/>
+  <line x1="742" y1="440" x2="962" y2="440" stroke="#12181c" stroke-width="2.5"/>
+  <text x="852" y="406" font-size="14" font-weight="700" fill="#12181c" text-anchor="middle">uploads/</text>
+  <text x="852" y="427" font-size="11" fill="#c0392b" text-anchor="middle">file store · raw filename → traversal</text>
+
+  <!-- ============ flows: client <-> app (3 lanes, 40px apart) ============ -->
+  <!-- lane 1: /notes -->
+  <text x="214" y="248" font-size="11.5" fill="#3a4655">GET/POST /notes</text>
+  <line x1="204" y1="258" x2="368" y2="258" stroke="#3a4655" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- lane 2: /upload (unsafe) -->
+  <text x="214" y="288" font-size="11.5" font-weight="700" fill="#c0392b">POST /upload  (filename)</text>
+  <line x1="204" y1="298" x2="368" y2="298" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+
+  <!-- lane 3: /files (response, reversed) -->
+  <text x="214" y="328" font-size="11.5" fill="#3a4655">GET /files/&lt;name&gt;</text>
+  <line x1="368" y1="338" x2="204" y2="338" stroke="#3a4655" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ============ flows: app <-> stores ============ -->
+  <!-- SQL -->
+  <text x="576" y="216" font-size="11" fill="#3a4655">SQL read / write</text>
+  <line x1="560" y1="252" x2="740" y2="205" stroke="#3a4655" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- write (unsafe) -->
+  <text x="576" y="352" font-size="11" font-weight="700" fill="#c0392b">f.save(join(dir, name))</text>
+  <line x1="560" y1="330" x2="740" y2="392" stroke="#c0392b" stroke-width="2.2" marker-end="url(#ar)"/>
+
+  <!-- read (safe) -->
+  <text x="576" y="424" font-size="11" font-weight="700" fill="#15803d">send_from_directory — safe</text>
+  <line x1="740" y1="432" x2="560" y2="352" stroke="#15803d" stroke-width="2" marker-end="url(#ag)"/>
+
+  <!-- ============ legend ============ -->
+  <rect x="30" y="492" width="262" height="80" fill="#f7f9fa" stroke="#dde4e7"/>
+  <text x="42" y="512" font-size="11" font-weight="700" fill="#12181c">Legend</text>
+  <line x1="44" y1="527" x2="74" y2="527" stroke="#c0392b" stroke-width="2.5" stroke-dasharray="7 5"/>
+  <text x="84" y="531" font-size="10.5" fill="#5b6472">trust boundary</text>
+  <line x1="44" y1="545" x2="74" y2="545" stroke="#c0392b" stroke-width="2.2"/>
+  <text x="84" y="549" font-size="10.5" fill="#5b6472">attacker-controlled path (unsafe)</text>
+  <line x1="44" y1="563" x2="74" y2="563" stroke="#15803d" stroke-width="2"/>
+  <text x="84" y="567" font-size="10.5" fill="#5b6472">defended flow</text>
+
+  <!-- ============ callout ============ -->
+  <rect x="308" y="492" width="662" height="80" fill="#fdf1ef" stroke="#e8c4bd"/>
+  <text x="322" y="512" font-size="11" font-weight="700" fill="#c0392b">Key asymmetry (Task 5)</text>
+  <text x="322" y="532" font-size="11" fill="#5b6472">WRITE is unsafe — os.path.join("uploads", "../x") escapes the directory, and an absolute second</text>
+  <text x="322" y="549" font-size="11" fill="#5b6472">argument discards the first entirely (verified). READ is safe — send_from_directory blocks "..".</text>
+  <text x="322" y="566" font-size="11" font-weight="700" fill="#5b6472">Same app, opposite outcomes: one input validated, its sibling forgotten.</text>
+</svg>
