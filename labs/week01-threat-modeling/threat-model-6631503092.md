@@ -180,6 +180,12 @@ $ curl … filename=notes.txt   → {"saved":"notes.txt"}   ← legit upload sti
 $ curl … filename=shell.php   → {"error":"rejected filename"}  ← allow-list rejects
 ```
 
+**Evidence (live session, 2026-08-15):**
+
+![BEFORE — traversal escapes uploads/ into /app](img/evidence/ev1-before.png)
+
+![AFTER — traversal blocked; legit upload works; .php rejected; os.path.join check](img/evidence/ev2-after.png)
+
 **Class vs instance.** This is an **instance** fix (it hardens `/upload`). The **class** fix is the
 invariant *"no user-supplied string ever becomes a path component"* — applied everywhere, plus
 running non-root and storing uploads outside `/app` so that even a future write-primitive can't
