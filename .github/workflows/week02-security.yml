@@ -1,0 +1,41 @@
+name: Week 2 security gate
+on:
+  push:
+    branches: [wk02]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create report directory
+        run: |
+          mkdir -p reports lab-scan/notevault lab-scan/fixed
+          cp project/starter-app/app.py project/starter-app/requirements.txt project/starter-app/Dockerfile lab-scan/notevault/
+          cp labs/week02-sdlc-tooling/vulnerable-repo/app_fixed.py lab-scan/fixed/app.py
+      - name: Semgrep - fail on high severity rules
+        run: >-
+          docker run --rm -v "$PWD/lab-scan:/src" -v "$PWD/reports:/reports" semgrep/semgrep:latest
+          semgrep scan --config p/default --config p/owasp-top-ten
+          --severity ERROR --error --json --output /reports/semgrep.json /src
+      - name: Trivy - fail on HIGH or CRITICAL dependencies
+        if: always()
+        run: >-
+          docker run --rm -v "$PWD:/src" aquasec/trivy:latest
+          fs --scanners vuln --severity HIGH,CRITICAL --exit-code 1
+          --format json --output /src/reports/trivy.json /src/project/starter-app
+      - name: Gitleaks - fail on any exposed secret
+        if: always()
+        run: >-
+          docker run --rm -v "$PWD:/src" zricethezav/gitleaks:latest
+          detect --no-git -s /src/project/starter-app --redact
+          --report-format json --report-path /src/reports/gitleaks.json --exit-code 1
+      - name: Preserve findings even when the gate fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: week02-security-findings
+          path: reports/
