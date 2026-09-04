@@ -5,12 +5,12 @@ and apply STRIDE to its components (web client, app, SQLite DB, /upload).
 """
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-import sqlite3, os
+import sqlite3, os, uuid
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 DB = "notes.db"
 UPLOAD_DIR = "uploads"
-ALLOWED_EXT = {".txt", ".png", ".jpg", ".jpeg", ".pdf"}
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def init_db():
@@ -32,19 +32,27 @@ def notes():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    f = request.files["file"]
-    # Fix (Task 8): never let a user-supplied string become a path component.
-    # secure_filename() strips directory separators and "..", so traversal
-    # can't escape UPLOAD_DIR; the allow-list then rejects unexpected types.
-    safe = secure_filename(f.filename or "")
-    if not safe or os.path.splitext(safe)[1].lower() not in ALLOWED_EXT:
-        return {"error": "rejected filename"}, 400
-    f.save(os.path.join(UPLOAD_DIR, safe))
-    return {"saved": safe}
+    f = request.files.get("file")
+    if f is None or not f.filename:
+        return {"error": "a named file is required"}, 400
+    raw = f.filename
+    if any(c in raw for c in ("/", "\\", "\x00")):
+        return {"error": "path components are not allowed"}, 400
+    safe = secure_filename(raw)
+    extension = safe.rsplit(".", 1)[-1].lower() if "." in safe else ""
+    if extension not in {"txt", "png", "jpg", "jpeg", "pdf"}:
+        return {"error": "unsupported file type"}, 400
+    # Only server-generated identifiers and fixed allowlisted suffixes form paths.
+    name = uuid.uuid4().hex + "." + extension
+    with open(os.path.join(UPLOAD_DIR, name), "xb") as output:
+        f.save(output)
+    return {"saved": name}
 
 @app.route("/files/<name>")
 def files(name):
-    return send_from_directory(UPLOAD_DIR, name)
+    response = send_from_directory(UPLOAD_DIR, name, as_attachment=True)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 if __name__ == "__main__":
     init_db()
