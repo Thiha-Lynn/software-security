@@ -3,7 +3,7 @@ services:
     build: .
     working_dir: /lab
     ports:
-      - "8080:5000"
+      - "127.0.0.1:8080:5000"
     volumes:
       - ./:/lab
     # Per-student flags: python3 ../../instructor/seed_flags.py env <STUDENT_ID> > .env
