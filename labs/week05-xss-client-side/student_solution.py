@@ -1,16 +1,30 @@
 """Complete Week 5 defense with output encoding, CSP, cookie flags, and CSRF checks."""
 import hmac
+import os
 import secrets
 
-from flask import Flask, Response, render_template_string, request
+from flask import Flask, Response, render_template_string, request, session
 from markupsafe import escape
 
 app = Flask(__name__)
+# Configure a persistent random SECRET_KEY for multi-worker/deployed use.
+# The fallback invalidates local lab sessions on process restart.
+app.config.update(
+    SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
+    SESSION_COOKIE_NAME="wk05_session",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_SECURE=True,
+    MAX_CONTENT_LENGTH=16 * 1024,
+)
 COMMENTS = []
 
-# This lab has no real account/session model. A production app should bind a
-# synchronizer token to each authenticated server-side session.
-CSRF_TOKEN = secrets.token_urlsafe(32)
+# Signed browser sessions prevent token reuse across different sessions.
+# This demonstration still has no account authentication.
+def csrf_token():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_urlsafe(32)
+    return session["csrf_token"]
 
 
 def secure(response: Response) -> Response:
@@ -33,7 +47,10 @@ def hello():
 def comments():
     if request.method == "POST":
         supplied = request.form.get("csrf_token", "")
-        if not supplied or not hmac.compare_digest(supplied, CSRF_TOKEN):
+        expected = session.get("csrf_token", "")
+        if not expected or not supplied or not hmac.compare_digest(
+            supplied.encode("utf-8"), expected.encode("utf-8")
+        ):
             return secure(Response("CSRF validation failed\n", status=403, mimetype="text/plain"))
         COMMENTS.append(request.form.get("body", ""))
     template = """<h2>Comments</h2>
@@ -42,7 +59,7 @@ def comments():
       <input name=body><input type=submit value=Post>
     </form><hr>
     {% for comment in comments %}<div class=comment>{{ comment }}</div>{% endfor %}"""
-    page = render_template_string(template, comments=COMMENTS, csrf_token=CSRF_TOKEN)
+    page = render_template_string(template, comments=COMMENTS, csrf_token=csrf_token())
     return secure(Response(page, mimetype="text/html"))
 
 
@@ -52,7 +69,7 @@ def index():
         "<a href=/hello?name=you>hello</a> | <a href=/comments>comments</a>",
         mimetype="text/html",
     )
-    response.set_cookie("session", "abc123", httponly=True, samesite="Strict", secure=True)
+    csrf_token()
     return secure(response)
 
 

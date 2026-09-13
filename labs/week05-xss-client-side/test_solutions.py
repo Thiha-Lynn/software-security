@@ -39,6 +39,34 @@ class CompletedStudentSolutionTests(unittest.TestCase):
         self.assertEqual(forged.status_code, 403)
         self.assertNotIn("forged without token", student_solution.COMMENTS)
 
+    def test_token_from_another_session_is_rejected(self):
+        attacker = student_solution.app.test_client()
+        form = attacker.get("/comments")
+        token = re.search(rb'name=csrf_token value="([^"]+)"', form.data).group(1).decode()
+        self.client.get("/comments")
+        forged = self.client.post("/comments", data={"csrf_token": token, "body": "cross-session forgery"})
+        self.assertEqual(forged.status_code, 403)
+        self.assertNotIn("cross-session forgery", student_solution.COMMENTS)
+
+    def test_token_without_its_session_cookie_is_rejected(self):
+        form = self.client.get("/comments")
+        token = re.search(rb'name=csrf_token value="([^"]+)"', form.data).group(1).decode()
+        anonymous = student_solution.app.test_client(use_cookies=False)
+        forged = anonymous.post("/comments", data={"csrf_token": token, "body": "no session"})
+        self.assertEqual(forged.status_code, 403)
+
+    def test_malformed_token_is_rejected_without_server_error(self):
+        self.client.get("/comments")
+        forged = self.client.post("/comments", data={"csrf_token": "invalid-\u2603", "body": "malformed"})
+        self.assertEqual(forged.status_code, 403)
+
+    def test_session_cookie_and_security_headers(self):
+        response = self.client.get("/")
+        cookie = response.headers["Set-Cookie"]
+        for flag in ("HttpOnly", "SameSite=Strict", "Secure", "wk05_session="):
+            self.assertIn(flag, cookie)
+        self.assertIn("form-action 'self'", response.headers["Content-Security-Policy"])
+
     def test_valid_token_allows_normal_post_and_output_is_escaped(self):
         form = self.client.get("/comments")
         token = re.search(rb'name=csrf_token value="([^"]+)"', form.data).group(1).decode()
