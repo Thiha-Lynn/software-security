@@ -2,6 +2,7 @@
 import io
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import solution_app
@@ -26,9 +27,10 @@ class Week04SolutionTests(unittest.TestCase):
         self.assertEqual(response.text, "Welcome alice\n")
 
     def test_sql_injection_payloads_are_data(self):
-        bypass = self.client.get(
-            "/login", query_string={"user": "x' OR '1'='1'--", "pw": "x"}
-        )
+        for payload in ("alice'--", "x' OR '1'='1'--"):
+            with self.subTest(payload=payload):
+                bypass = self.client.get("/login", query_string={"user": payload, "pw": "x"})
+                self.assertEqual(bypass.text, "Login failed\n")
         dump = self.client.get(
             "/search",
             query_string={"q": "' UNION SELECT username,password FROM users--"},
@@ -38,9 +40,20 @@ class Week04SolutionTests(unittest.TestCase):
         self.assertNotIn("bobpw", dump.text)
 
     def test_command_injection_is_rejected_before_subprocess(self):
-        response = self.client.get("/ping", query_string={"host": "127.0.0.1;id"})
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.text, "invalid host\n")
+        for suffix in (";id", ";whoami", ";cat /flag.txt", "$(id)", "\nid"):
+            with self.subTest(suffix=suffix), patch.object(solution_app.subprocess, "run") as run:
+                response = self.client.get("/ping", query_string={"host": "127.0.0.1" + suffix})
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.text, "invalid host\n")
+                run.assert_not_called()
+
+    def test_valid_ping_uses_argument_list_without_shell(self):
+        with patch.object(solution_app.subprocess, "run") as run:
+            run.return_value.stdout = "one successful ping"
+            run.return_value.stderr = ""
+            response = self.client.get("/ping", query_string={"host": "127.0.0.1"})
+            self.assertEqual(response.status_code, 200)
+            run.assert_called_once_with(["ping", "-c", "1", "127.0.0.1"], shell=False, capture_output=True, text=True)
 
     def test_upload_allowlist_rejects_code_and_accepts_text(self):
         rejected = self.client.post(
