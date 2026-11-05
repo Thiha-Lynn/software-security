@@ -67,6 +67,16 @@ PAGE = """
 """
 
 
+@app.after_request
+def restrict_browser_execution(response):
+    # HelpBot only renders text and submits its form back to this origin.
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'none'; script-src 'none'; form-action 'self'; "
+        "base-uri 'none'; frame-ancestors 'none'"
+    )
+    return response
+
+
 @app.get("/")
 def chat():
     msg = request.args.get("msg", "")
